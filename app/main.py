@@ -1,10 +1,12 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from pathlib import Path
 import uuid
+import io
 
 from .transcriber import Transcriber
 from .llm_service import LLMService
+from .tts_service import TTSService
 
 app = FastAPI(title="Voice2Text API")
 
@@ -14,6 +16,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 transcriber: Transcriber | None = None
 llm_service = LLMService()
+tts_service = TTSService()
 
 
 @app.on_event("startup")
@@ -53,10 +56,20 @@ async def transcribe_audio(file: UploadFile = File(...)):
         # 2️⃣ Ollama
         llm_response = await llm_service.generate(transcription)
 
-        return {
-            "transcription": transcription,
-            "llm_response": llm_response
-        }
+        # 3️⃣ Coqui TTS
+        if not llm_response or not llm_response.strip():
+            llm_response = "Sorry, I could not generate a response."
+
+        audio_bytes = await tts_service.synthesize(llm_response)
+
+        # 4️⃣ Return WAV file
+        return StreamingResponse(
+            io.BytesIO(audio_bytes),
+            media_type="audio/wav",
+            headers={
+                "Content-Disposition": "attachment; filename=response.wav"
+            }
+        )
 
     finally:
         if file_path.exists():

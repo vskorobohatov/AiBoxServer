@@ -2,16 +2,15 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Системные зависимости
 RUN apt-get update && apt-get install -y \
     ffmpeg build-essential libsndfile1 git curl && \
     rm -rf /var/lib/apt/lists/*
 
-# Python зависимости
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Приложение
+RUN pip install --no-cache-dir torch==2.1.0+cpu torchaudio==2.1.0+cpu --index-url https://download.pytorch.org/whl/cpu
+
 COPY app ./app
 
 EXPOSE 8000

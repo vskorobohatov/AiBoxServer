@@ -1,5 +1,4 @@
 services:
-
   whisper-api:
     build: .
     container_name: whisper-api
@@ -7,8 +6,10 @@ services:
       - "8000:8000"
     depends_on:
       - ollama
+      - coqui-tts
     environment:
-      - OLLAMA_URL=http://ollama:11434/api/generate
+      OLLAMA_URL: http://ollama:11434/api/generate
+      TTS_URL: http://coqui-tts:5002
     volumes:
       - whisper_models:/root/.cache
     restart: unless-stopped
@@ -17,9 +18,9 @@ services:
     image: ollama/ollama:latest
     entrypoint: >
       sh -c "
-      ollama serve &
-      sleep 5 &&
-      ollama pull llama3.1:latest &&
+      ollama serve & 
+      sleep 5 && 
+      ollama pull llama3.2:1b && 
       wait
       "
     container_name: ollama
@@ -27,6 +28,14 @@ services:
       - "11434:11434"
     volumes:
       - ollama_models:/root/.ollama
+    restart: unless-stopped
+
+  coqui-tts:
+    build:
+      context: ./tts-docker
+    container_name: coqui-tts
+    ports:
+      - "5002:5002"
     restart: unless-stopped
 
 volumes:

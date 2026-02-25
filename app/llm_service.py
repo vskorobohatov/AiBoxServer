@@ -2,7 +2,7 @@ import httpx
 import os
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://ollama:11434/v1/generate")
-MODEL_NAME = "llama3.1:latest"
+MODEL_NAME = "llama3.2:1b"
 
 class LLMService:
     async def generate(self, prompt: str) -> str:
