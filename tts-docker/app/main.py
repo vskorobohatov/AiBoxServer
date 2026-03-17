@@ -4,33 +4,34 @@ from pydantic import BaseModel
 from TTS.api import TTS
 import io
 import soundfile as sf
+import os
 
 app = FastAPI(title="Coqui TTS REST API")
 
 tts_model = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2")
 
+VOICE_PATH = os.path.join(os.path.dirname(__file__), "voice.wav")
+
 class SynthesizeRequest(BaseModel):
     text: str
-    speaker: str = None
+    language: str = "ru"
 
 @app.post("/synthesize")
 async def synthesize(request: SynthesizeRequest):
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Empty text not allowed")
 
-    kwargs = {}
-    if hasattr(tts_model, "speakers") and tts_model.speakers:
-        if request.speaker is None:
-            kwargs["speaker"] = tts_model.speakers[0]
-        else:
-            if request.speaker not in tts_model.speakers:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Speaker must be one of {tts_model.speakers}"
-                )
-            kwargs["speaker"] = request.speaker
+    # Проверим что файл есть
+    if not os.path.exists(VOICE_PATH):
+        raise HTTPException(status_code=500, detail="voice.wav not found")
 
-    wav = tts_model.tts(request.text, **kwargs)
+    # ✅ Главная правка — используем speaker_wav
+    wav = tts_model.tts(
+        text=request.text,
+        speaker_wav=VOICE_PATH,
+        language=request.language
+    )
+
     sr = tts_model.synthesizer.output_sample_rate
 
     buffer = io.BytesIO()

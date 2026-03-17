@@ -54,7 +54,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
         transcription = transcriber.transcribe(str(file_path))
 
         # 2️⃣ Ollama
-        llm_response = await llm_service.generate(transcription)
+        prompt = f"{transcription}\nОтвeть коротко."
+        llm_response = await llm_service.generate(prompt)
 
         # 3️⃣ Coqui TTS
         if not llm_response or not llm_response.strip():
@@ -67,7 +68,8 @@ async def transcribe_audio(file: UploadFile = File(...)):
             io.BytesIO(audio_bytes),
             media_type="audio/wav",
             headers={
-                "Content-Disposition": "attachment; filename=response.wav"
+                "Content-Disposition": "attachment; filename=response.wav",
+                "Content-Length": str(len(audio_bytes))
             }
         )
 
